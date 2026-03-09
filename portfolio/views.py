@@ -1,7 +1,8 @@
+import json
 from django.shortcuts import render, redirect, get_object_or_404
 from .models import Portfolio
 from .forms import AssetForm
-from .services import get_price, MOCK_PRICES
+from .services import get_price, MOCK_PRICES, calculate_weights
 
 
 def dashboard(request):
@@ -9,7 +10,7 @@ def dashboard(request):
 
     portfolio_data = []
     for portfolio in portfolios:
-        assets_with_price = [
+        assets_raw = [
             {
                 "ticker": asset.ticker,
                 "quantity": asset.quantity,
@@ -18,10 +19,21 @@ def dashboard(request):
             }
             for asset in portfolio.assets.all()
         ]
+
+        # Task 3.1.1: розраховуємо частки для кожного активу
+        assets_with_weights = calculate_weights(assets_raw)
+
+        # Task 3.2.2: дані для Chart.js (JSON-серіалізовані для передачі в JS)
+        chart_data = {
+            "labels": [a["ticker"] for a in assets_with_weights],
+            "values": [a["weight"] for a in assets_with_weights],
+        }
+
         portfolio_data.append({
             "portfolio": portfolio,
-            "assets": assets_with_price,
+            "assets": assets_with_weights,
             "total": portfolio.total_value(),
+            "chart_data": json.dumps(chart_data),
         })
 
     return render(request, "portfolio_app/dashboard.html", {"portfolio_data": portfolio_data})

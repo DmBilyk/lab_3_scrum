@@ -1,7 +1,4 @@
-"""
-Mock-сервіс цін на акції.
-У реальному проєкті тут був би виклик до зовнішнього API (Yahoo Finance, Alpha Vantage тощо).
-"""
+
 
 MOCK_PRICES: dict[str, float] = {
     "AAPL": 189.30,
@@ -20,10 +17,22 @@ UNKNOWN_PRICE = 0.0
 
 
 def get_price(ticker: str) -> float:
-    """Повертає ціну за тікером. Якщо тікер невідомий — повертає 0."""
+
     return MOCK_PRICES.get(ticker.upper(), UNKNOWN_PRICE)
 
 
 def calculate_asset_value(ticker: str, quantity: int) -> float:
-    """Розраховує вартість активу: кількість × поточна ціна."""
+
     return get_price(ticker) * quantity
+
+
+def calculate_weights(assets: list[dict]) -> list[dict]:
+
+    total = sum(asset["value"] for asset in assets)
+    if total == 0:
+        return [{**asset, "weight": 0.0} for asset in assets]
+
+    return [
+        {**asset, "weight": round(asset["value"] / total * 100, 2)}
+        for asset in assets
+    ]
