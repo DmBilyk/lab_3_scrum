@@ -1,0 +1,46 @@
+{% extends "portfolio_app/base.html" %}
+
+{% block content %}
+<h1>Мої портфелі</h1>
+
+{% if not portfolio_data %}
+    <div class="card">
+        <p>Портфелів ще немає. <a href="{% url 'create_portfolio' %}">Створіть перший</a>.</p>
+    </div>
+{% endif %}
+
+{% for item in portfolio_data %}
+<div class="card">
+    <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:16px;">
+        <h2>{{ item.portfolio.name }}</h2>
+        <a href="{% url 'add_asset' item.portfolio.id %}" class="btn btn-primary btn-sm">+ Додати актив</a>
+    </div>
+
+    {% if item.portfolio.assets.all %}
+    <table>
+        <thead>
+            <tr>
+                <th>Тікер</th>
+                <th>Кількість</th>
+                <th>Ціна / шт.</th>
+                <th>Вартість</th>
+            </tr>
+        </thead>
+        <tbody>
+            {% for asset in item.portfolio.assets.all %}
+            <tr>
+                <td>{{ asset.ticker }}</td>
+                <td>{{ asset.quantity }}</td>
+                <td>${{ asset.price_per_unit }}</td>
+                <td>${{ asset.current_value }}</td>
+            </tr>
+            {% endfor %}
+        </tbody>
+    </table>
+    <p style="margin-top:12px;" class="total">Загальна вартість: ${{ item.total }}</p>
+    {% else %}
+        <p style="color:#888;">Активів ще немає.</p>
+    {% endif %}
+</div>
+{% endfor %}
+{% endblock %}
