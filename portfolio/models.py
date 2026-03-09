@@ -1,4 +1,5 @@
 from django.db import models
+from .services import get_price, calculate_asset_value
 
 
 class Portfolio(models.Model):
@@ -8,14 +9,12 @@ class Portfolio(models.Model):
     def __str__(self):
         return self.name
 
-    def total_value(self):
+    def total_value(self) -> float:
+        """FIX BUG 3: повертає 0.0 для порожнього портфеля замість ZeroDivisionError."""
         assets = self.assets.all()
-        total = sum(asset.current_value() for asset in assets)
-
-        # BUG 3: Division by zero / TypeError — якщо портфель порожній,
-        # assets.count() == 0, що призводить до ZeroDivisionError на дашборді
-        avg_price = total / assets.count()
-        return total
+        if not assets.exists():
+            return 0.0
+        return sum(asset.current_value() for asset in assets)
 
     class Meta:
         verbose_name = "Portfolio"
@@ -27,18 +26,18 @@ class Asset(models.Model):
         Portfolio, on_delete=models.CASCADE, related_name="assets"
     )
     ticker = models.CharField(max_length=20)
-
-    # BUG 1: Відсутня валідація на від'ємні значення — поле приймає будь-яке ціле число,
-    # включно з від'ємними (наприклад, -5), що ламає розрахунок загальної вартості
-    quantity = models.IntegerField()
-
-    price_per_unit = models.DecimalField(max_digits=10, decimal_places=2, default=0)
-
-    def current_value(self):
-        return self.quantity * self.price_per_unit
+    quantity = models.PositiveIntegerField()  # FIX BUG 1: PositiveIntegerField не дозволяє від'ємні значення на рівні БД
 
     def __str__(self):
         return f"{self.ticker} ({self.quantity})"
+
+    def price(self) -> float:
+
+        return get_price(self.ticker)
+
+    def current_value(self) -> float:
+
+        return calculate_asset_value(self.ticker, self.quantity)
 
     class Meta:
         verbose_name = "Asset"
